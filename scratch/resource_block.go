@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-type resourceDynamicType struct{}
+type resourceBlockType struct{}
 
-func (r resourceDynamicType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (r resourceBlockType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
@@ -27,16 +27,16 @@ func (r resourceDynamicType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 		Blocks: map[string]tfsdk.Block{
 			"in": {
 				Attributes: map[string]tfsdk.Attribute{
-					"first": {
+					"string": {
 						Type:     types.StringType,
 						Optional: true,
 					},
-					"second": {
-						Type:     types.StringType,
+					"number": {
+						Type:     types.NumberType,
 						Optional: true,
 					},
-					"third": {
-						Type:     types.StringType,
+					"bool": {
+						Type:     types.BoolType,
 						Optional: true,
 					},
 				},
@@ -47,17 +47,17 @@ func (r resourceDynamicType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 	}, nil
 }
 
-func (r resourceDynamicType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
-	return resourceDynamic{
+func (r resourceBlockType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+	return resourceBlock{
 		p: *(p.(*provider)),
 	}, nil
 }
 
-type resourceDynamic struct {
+type resourceBlock struct {
 	p provider
 }
 
-func (r resourceDynamic) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+func (r resourceBlock) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
 	if !r.p.configured {
 		resp.Diagnostics.AddError(
 			"Provider not configured",
@@ -66,7 +66,7 @@ func (r resourceDynamic) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 
-	var plan Dynamic
+	var plan Block
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -82,7 +82,7 @@ func (r resourceDynamic) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 
-	var result = Dynamic{
+	var result = Block{
 		ID:          types.String{Value: id.String()},
 		In:          plan.In,
 		Description: plan.Description,
@@ -94,8 +94,8 @@ func (r resourceDynamic) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	}
 }
 
-func (r resourceDynamic) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	var state Dynamic
+func (r resourceBlock) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
+	var state Block
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -104,7 +104,7 @@ func (r resourceDynamic) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 
 	id := state.ID
 
-	var result = Dynamic{
+	var result = Block{
 		ID:          id,
 		In:          state.In,
 		Description: state.Description,
@@ -117,15 +117,15 @@ func (r resourceDynamic) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 	}
 }
 
-func (r resourceDynamic) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	var plan Dynamic
+func (r resourceBlock) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+	var plan Block
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var state Dynamic
+	var state Block
 	diags = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -134,7 +134,7 @@ func (r resourceDynamic) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 
 	id := state.ID
 
-	var result = Dynamic{
+	var result = Block{
 		ID:          id,
 		In:          plan.In,
 		Description: plan.Description,
@@ -147,8 +147,8 @@ func (r resourceDynamic) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	}
 }
 
-func (r resourceDynamic) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
-	var state Dynamic
+func (r resourceBlock) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+	var state Block
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -158,6 +158,6 @@ func (r resourceDynamic) Delete(ctx context.Context, req tfsdk.DeleteResourceReq
 	resp.State.RemoveResource(ctx)
 }
 
-func (r resourceDynamic) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
+func (r resourceBlock) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
 	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
 }

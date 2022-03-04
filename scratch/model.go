@@ -34,14 +34,14 @@ type Map struct {
 	Description types.String `tfsdk:"description"`
 }
 
-type Dynamic struct {
-	ID          types.String   `tfsdk:"id"`
-	Description types.String   `tfsdk:"description"`
-	In          []DynamicProps `tfsdk:"in"`
+type Block struct {
+	ID          types.String `tfsdk:"id"`
+	Description types.String `tfsdk:"description"`
+	In          []BlockProps `tfsdk:"in"`
 }
 
-type DynamicProps struct {
-	First  types.String `tfsdk:"first"`
-	Second types.String `tfsdk:"second"`
-	Third  types.String `tfsdk:"third"`
+type BlockProps struct {
+	String types.String `tfsdk:"string"`
+	Number types.Number `tfsdk:"number"`
+	Bool   types.Bool   `tfsdk:"bool"`
 }
