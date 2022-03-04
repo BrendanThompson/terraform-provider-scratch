@@ -28,7 +28,7 @@ resource "scratch_block" "multi" {
     for_each = local.map
 
     content {
-      first = in.value.name
+      string = in.value.name
     }
   }
 }
