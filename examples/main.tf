@@ -97,7 +97,8 @@ resource "scratch_bool" "multi" {
 }
 
 resource "scratch_list" "single" {
-  in = ["cat", "dog", "mouse"]
+  description = "exmaple"
+  in          = ["cat", "dog", "mouse"]
 }
 
 output "list_single" {
@@ -132,4 +133,31 @@ resource "scratch_map" "multi" {
 
 output "map_multi" {
   value = scratch_map.multi[*]
+}
+
+resource "scratch_dynamic" "single" {
+  description = "example"
+  in {
+    first = "one"
+    # second = "two"
+    third = "three"
+  }
+}
+
+output "dynamic_single" {
+  value = scratch_dynamic.single
+}
+
+resource "scratch_dynamic" "multi" {
+  dynamic "in" {
+    for_each = local.map
+
+    content {
+      first = in.value.name
+    }
+  }
+}
+
+output "dynamic_multi" {
+  value = scratch_dynamic.multi
 }
