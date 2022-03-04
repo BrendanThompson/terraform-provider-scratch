@@ -36,7 +36,7 @@ type Map struct {
 
 type Dynamic struct {
 	ID          types.String   `tfsdk:"id"`
-	Description types.String   `tfsdk:"description,omitempty"`
+	Description types.String   `tfsdk:"description"`
 	In          []DynamicProps `tfsdk:"in"`
 }
 
