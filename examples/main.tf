@@ -135,29 +135,29 @@ output "map_multi" {
   value = scratch_map.multi[*]
 }
 
-resource "scratch_dynamic" "single" {
+resource "scratch_block" "single" {
   description = "example"
   in {
-    first = "one"
-    # second = "two"
-    third = "three"
+    string = "one"
+    number = 666
+    bool   = true
   }
 }
 
-output "dynamic_single" {
-  value = scratch_dynamic.single
+output "block_single" {
+  value = scratch_block.single
 }
 
-resource "scratch_dynamic" "multi" {
+resource "scratch_block" "multi" {
   dynamic "in" {
     for_each = local.map
 
     content {
-      first = in.value.name
+      string = in.value.name
     }
   }
 }
 
-output "dynamic_multi" {
-  value = scratch_dynamic.multi
+output "block_multi" {
+  value = scratch_block.multi
 }
