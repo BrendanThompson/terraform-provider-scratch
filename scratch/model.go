@@ -1,6 +1,8 @@
 package scratch
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
+import (
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 type String struct {
 	ID          types.String `tfsdk:"id"`
@@ -30,4 +32,16 @@ type Map struct {
 	ID          types.String `tfsdk:"id"`
 	In          types.Map    `tfsdk:"in"`
 	Description types.String `tfsdk:"description"`
+}
+
+type Dynamic struct {
+	ID          types.String   `tfsdk:"id"`
+	Description types.String   `tfsdk:"description,omitempty"`
+	In          []DynamicProps `tfsdk:"in"`
+}
+
+type DynamicProps struct {
+	First  types.String `tfsdk:"first"`
+	Second types.String `tfsdk:"second"`
+	Third  types.String `tfsdk:"third"`
 }
