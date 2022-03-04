@@ -1,13 +1,13 @@
 ---
-page_title: "dynamic Resource - terraform-provider-scratch"
+page_title: "block Resource - terraform-provider-scratch"
 subcategory: ""
 description: |-
-	The dynamic resource allows you to test dynamic Blocks.
+	The block resource allows you to test dynamic blocks.
 ---
 
-# Resource `scratch_dynamic`
+# Resource `scratch_block`
 
-The dynamic resource allows you to test dynamic blocks.
+The block resource allows you to test dynamic blocks.
 
 ## Example Usage
 
@@ -23,8 +23,8 @@ locals {
 	}
 }
 
-resource "scratch_dynamic" "multi" {
-  dynamic "in" {
+resource "scratch_block" "multi" {
+  block "in" {
     for_each = local.map
 
     content {
@@ -42,11 +42,11 @@ resource "scratch_dynamic" "multi" {
 
 ---
 
-An `in` block represents a block that can be used for `dynamic`:
+An `in` block represents a block that can be used for `block`:
 
-- `first` - (Optional) First argument.
-- `second` - (Optional) Second argument.
-- `third` - (Optional) Third argument.
+- `string` - (Optional) String argument.
+- `number` - (Optional) Number argument.
+- `bool` - (Optional) Bool argument.
 
 ## Attribute Reference
 
