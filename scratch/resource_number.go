@@ -5,14 +5,30 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-type resourceNumberType struct{}
+var _ resource.Resource = &NumberResource{}
 
-func (r resourceNumberType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func NewNumberResource() resource.Resource {
+	return &NumberResource{}
+}
+
+type NumberResource struct{}
+
+type NumberResourceModel struct {
+	ID          types.String `tfsdk:"id"`
+	In          types.Number `tfsdk:"in"`
+	Description types.String `tfsdk:"description"`
+}
+
+func (r *NumberResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_number"
+}
+
+func (r *NumberResource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
@@ -31,31 +47,10 @@ func (r resourceNumberType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Dia
 	}, nil
 }
 
-func (r resourceNumberType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
-	return resourceNumber{
-		p: *(p.(*provider)),
-	}, nil
-}
+func (r *NumberResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data NumberResourceModel
 
-type resourceNumber struct {
-	p provider
-}
-
-func (r resourceNumber) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-	if !r.p.configured {
-		resp.Diagnostics.AddError(
-			"Provider not configured",
-			"The provider hasn't been configured before apply, likely because it depends on an unknown value from anoter resource.",
-		)
-		return
-	}
-
-	var plan Number
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
 	id, err := uuid.NewUUID()
 	if err != nil {
@@ -66,82 +61,39 @@ func (r resourceNumber) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 		return
 	}
 
-	var result = Number{
-		ID:          types.String{Value: id.String()},
-		In:          plan.In,
+	data.ID = types.String{Value: id.String()}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *NumberResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data NumberResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *NumberResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan NumberResourceModel
+	var state NumberResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	var result = NumberResourceModel{
+		ID:          state.ID,
 		Description: plan.Description,
-	}
-
-	diags = resp.State.Set(ctx, result)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r resourceNumber) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	var state Number
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	id := state.ID
-
-	var result = Number{
-		ID:          id,
-		In:          state.In,
-		Description: state.Description,
-	}
-
-	diags = resp.State.Set(ctx, &result)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r resourceNumber) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	var plan Number
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var state Number
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	id := state.ID
-
-	var result = Number{
-		ID:          id,
 		In:          plan.In,
-		Description: plan.Description,
 	}
 
-	diags = resp.State.Set(ctx, result)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
 }
 
-func (r resourceNumber) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
-	var state Number
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func (r *NumberResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data NumberResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
 	resp.State.RemoveResource(ctx)
-}
-
-func (r resourceNumber) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
 }

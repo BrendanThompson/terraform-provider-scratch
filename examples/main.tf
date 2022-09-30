@@ -1,12 +1,14 @@
 terraform {
   required_providers {
     scratch = {
-      source = "registry.terraform.io/brendanthompson/scratch"
+      source = "BrendanThompson/scratch"
     }
   }
 }
 
-provider "scratch" {}
+provider "scratch" {
+  use = true
+}
 
 locals {
   string = {
@@ -44,7 +46,7 @@ locals {
 }
 
 resource "scratch_string" "single" {
-  in = "hello"
+  in = "hello, moto!"
 }
 
 output "string_single" {
@@ -98,7 +100,7 @@ resource "scratch_bool" "multi" {
 
 resource "scratch_list" "single" {
   description = "exmaple"
-  in          = ["cat", "dog", "mouse"]
+  in          = ["cat", "dog", "mouse", "elephant"]
 }
 
 output "list_single" {
@@ -117,7 +119,7 @@ output "list_multi" {
 }
 
 resource "scratch_map" "single" {
-  in = { name = "Brendan", Age = "31" }
+  in = { name = "Brendan Thompson", Age = "32" }
 }
 
 output "map_single" {
@@ -139,8 +141,8 @@ resource "scratch_block" "single" {
   description = "example"
   in {
     string = "one"
-    number = 666
-    bool   = true
+    number = 666777
+    bool   = false
   }
 }
 
@@ -154,10 +156,19 @@ resource "scratch_block" "multi" {
 
     content {
       string = in.value.name
+
     }
   }
 }
 
 output "block_multi" {
   value = scratch_block.multi
+}
+
+data "scratch_string" "this" {
+  in = "meow"
+}
+
+output "data_string" {
+  value = data.scratch_string.this
 }

@@ -5,14 +5,30 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-type resourceMapType struct{}
+var _ resource.Resource = &MapResource{}
 
-func (r resourceMapType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func NewMapResource() resource.Resource {
+	return &MapResource{}
+}
+
+type MapResource struct{}
+
+type MapResourceModel struct {
+	ID          types.String `tfsdk:"id"`
+	In          types.Map    `tfsdk:"in"`
+	Description types.String `tfsdk:"description"`
+}
+
+func (r *MapResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_map"
+}
+
+func (r *MapResource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
@@ -33,31 +49,10 @@ func (r resourceMapType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagno
 	}, nil
 }
 
-func (r resourceMapType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
-	return resourceMap{
-		p: *(p.(*provider)),
-	}, nil
-}
+func (r *MapResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data MapResourceModel
 
-type resourceMap struct {
-	p provider
-}
-
-func (r resourceMap) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-	if !r.p.configured {
-		resp.Diagnostics.AddError(
-			"Provider not configured",
-			"The provider hasn't been configured before apply, likely because it depends on an unknown value from anoter resource.",
-		)
-		return
-	}
-
-	var plan Map
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
 	id, err := uuid.NewUUID()
 	if err != nil {
@@ -68,82 +63,39 @@ func (r resourceMap) Create(ctx context.Context, req tfsdk.CreateResourceRequest
 		return
 	}
 
-	var result = Map{
-		ID:          types.String{Value: id.String()},
-		In:          plan.In,
+	data.ID = types.String{Value: id.String()}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *MapResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data MapResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *MapResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan MapResourceModel
+	var state MapResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	var result = MapResourceModel{
+		ID:          state.ID,
 		Description: plan.Description,
-	}
-
-	diags = resp.State.Set(ctx, result)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r resourceMap) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	var state Map
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	id := state.ID
-
-	var result = Map{
-		ID:          id,
-		In:          state.In,
-		Description: state.Description,
-	}
-
-	diags = resp.State.Set(ctx, &result)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r resourceMap) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	var plan Map
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var state Map
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	id := state.ID
-
-	var result = Map{
-		ID:          id,
 		In:          plan.In,
-		Description: plan.Description,
 	}
 
-	diags = resp.State.Set(ctx, result)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
 }
 
-func (r resourceMap) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
-	var state Map
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func (r *MapResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data MapResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
 	resp.State.RemoveResource(ctx)
-}
-
-func (r resourceMap) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
 }
