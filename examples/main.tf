@@ -7,7 +7,7 @@ terraform {
 }
 
 provider "scratch" {
-  use = true
+  # use = true
 }
 
 locals {
