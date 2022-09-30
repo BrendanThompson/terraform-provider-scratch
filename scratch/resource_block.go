@@ -5,14 +5,36 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-type resourceBlockType struct{}
+var _ resource.Resource = &BlockResource{}
 
-func (r resourceBlockType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func NewBlockResource() resource.Resource {
+	return &BlockResource{}
+}
+
+type BlockResource struct{}
+
+type BlockResourceModel struct {
+	ID          types.String `tfsdk:"id"`
+	Description types.String `tfsdk:"description"`
+	In          []BlockProps `tfsdk:"in"`
+}
+
+type BlockProps struct {
+	String types.String `tfsdk:"string"`
+	Number types.Number `tfsdk:"number"`
+	Bool   types.Bool   `tfsdk:"bool"`
+}
+
+func (r *BlockResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_block"
+}
+
+func (r *BlockResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
@@ -47,31 +69,10 @@ func (r resourceBlockType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diag
 	}, nil
 }
 
-func (r resourceBlockType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
-	return resourceBlock{
-		p: *(p.(*provider)),
-	}, nil
-}
+func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data BlockResourceModel
 
-type resourceBlock struct {
-	p provider
-}
-
-func (r resourceBlock) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-	if !r.p.configured {
-		resp.Diagnostics.AddError(
-			"Provider not configured",
-			"The provider hasn't been configured before apply, likely because it depends on an unknown value from anoter resource.",
-		)
-		return
-	}
-
-	var plan Block
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
 	id, err := uuid.NewUUID()
 	if err != nil {
@@ -82,82 +83,39 @@ func (r resourceBlock) Create(ctx context.Context, req tfsdk.CreateResourceReque
 		return
 	}
 
-	var result = Block{
-		ID:          types.String{Value: id.String()},
-		In:          plan.In,
+	data.ID = types.String{Value: id.String()}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data BlockResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan BlockResourceModel
+	var state BlockResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	var result = BlockResourceModel{
+		ID:          state.ID,
 		Description: plan.Description,
-	}
-
-	diags = resp.State.Set(ctx, result)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r resourceBlock) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	var state Block
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	id := state.ID
-
-	var result = Block{
-		ID:          id,
-		In:          state.In,
-		Description: state.Description,
-	}
-
-	diags = resp.State.Set(ctx, &result)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r resourceBlock) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	var plan Block
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var state Block
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	id := state.ID
-
-	var result = Block{
-		ID:          id,
 		In:          plan.In,
-		Description: plan.Description,
 	}
 
-	diags = resp.State.Set(ctx, result)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
 }
 
-func (r resourceBlock) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
-	var state Block
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func (r *BlockResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data BlockResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
 	resp.State.RemoveResource(ctx)
-}
-
-func (r resourceBlock) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
 }

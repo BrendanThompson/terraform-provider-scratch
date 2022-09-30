@@ -3,7 +3,7 @@ HOSTNAME=registry.terraform.io
 NAMESPACE=brendanthompson
 NAME=scratch
 BINARY=terraform-provider-${NAME}
-VERSION=0.1.0
+VERSION=0.0.1
 OS_ARCH=darwin_arm64
 
 default: install
