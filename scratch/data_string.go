@@ -19,8 +19,9 @@ func NewStringDataSource() datasource.DataSource {
 type StringDataSource struct{}
 
 type StringDataSourceModel struct {
-	ID types.String `tfsdk:"id"`
-	In types.String `tfsdk:"in"`
+	ID  types.String `tfsdk:"id"`
+	In  types.String `tfsdk:"in"`
+	Out types.String `tfsdk:"out"`
 }
 
 func (s *StringDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -38,6 +39,10 @@ func (s StringDataSource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 				Type:     types.StringType,
 				Required: true,
 			},
+			"out": {
+				Type:     types.StringType,
+				Computed: true,
+			},
 		},
 	}, nil
 }
@@ -45,7 +50,9 @@ func (s StringDataSource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 func (s *StringDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data StringDataSourceModel
 
-	id, err := uuid.NewUUID()
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	uuid, err := uuid.NewUUID()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to generate UUID",
@@ -54,10 +61,12 @@ func (s *StringDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	var result = StringDataSourceModel{
+		ID:  types.String{Value: uuid.String()},
+		In:  data.In,
+		Out: data.In,
+	}
 
-	data.ID = types.String{Value: id.String()}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
 
 }
