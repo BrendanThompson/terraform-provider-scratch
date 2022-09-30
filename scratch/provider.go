@@ -24,11 +24,11 @@ func New(version string) func() provider.Provider {
 type ScratchProvider struct {
 	Version string
 
-	configured bool
+	isConfigured bool
 }
 
 type ScratchProviderModel struct {
-	Use bool `tfsdk:"use"`
+	Use types.Bool `tfsdk:"use"`
 }
 
 func (p *ScratchProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -47,19 +47,15 @@ func (p *ScratchProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagn
 }
 
 func (p *ScratchProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var config ScratchProviderModel
+	var data ScratchProviderModel
 
-	diags := req.Config.Get(ctx, &config)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if !data.Use.Value {
+		data.Use = types.Bool{Value: true}
 	}
 
-	if !config.Use {
-		config.Use = true
-	}
-
-	p.configured = true
+	p.isConfigured = true
 }
 
 func (p *ScratchProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
