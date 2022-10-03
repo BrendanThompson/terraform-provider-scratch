@@ -12,6 +12,7 @@ import (
 var (
 	// Example version string that can be overwritten by a release process
 	version string = "dev"
+	commit  string = ""
 )
 
 func main() {
