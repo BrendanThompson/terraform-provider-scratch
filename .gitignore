@@ -30,3 +30,6 @@ override.tf.json
 
 # Terraform lock files
 .terraform.lock.hcl
+
+# Terraform Provider Binaries
+terraform-provider-*
