@@ -1,0 +1,13 @@
+{
+  "actions" : {
+    "build" : {
+      "enabled" : true,
+      "script" : "make build"
+    },
+    "run" : {
+      "enabled" : true,
+      "script" : "make install"
+    }
+  },
+  "openLogOnRun" : "start"
+}
