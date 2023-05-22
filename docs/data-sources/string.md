@@ -23,7 +23,7 @@ data "scratch_string" "this" {
 
 ## Attribute Reference
 
-In addition to all the arguments aboves, the following attributes are exported.
+In addition to all the arguments above, the following attributes are exported.
 
 - `id` - The ID of the resource.
 - `out` - The value of `in`.
